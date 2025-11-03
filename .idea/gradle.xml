@@ -11,6 +11,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/flink-sensors-data-generator" />
             <option value="$PROJECT_DIR$/flink-sensors-jobs" />
+            <option value="$PROJECT_DIR$/sensors-commons" />
           </set>
         </option>
       </GradleProjectSettings>

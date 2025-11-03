@@ -1,4 +1,4 @@
-package ru.sinitsynme.sensors;
+package ru.sinitsynme.util;
 
 import java.io.IOException;
 import java.io.InputStream;
