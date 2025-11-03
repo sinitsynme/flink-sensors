@@ -14,7 +14,7 @@ val junitVersion: String by project
 val jacksonVersion: String by project
 
 dependencies {
-    compileOnly(project(":sensors-commons"))
+    implementation(project(":sensors-commons"))
     implementation("org.apache.kafka:kafka-clients:$kafkaClientsVersion")
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion")

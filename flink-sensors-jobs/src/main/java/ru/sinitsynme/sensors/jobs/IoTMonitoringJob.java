@@ -6,7 +6,6 @@ import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
-import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -18,6 +17,7 @@ import ru.sinitsynme.util.AppProperties;
 import java.time.Duration;
 import java.util.Objects;
 
+import static org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer.committedOffsets;
 import static ru.sinitsynme.sensors.SensorType.TEMPERATURE;
 
 public class IoTMonitoringJob {
@@ -43,7 +43,7 @@ public class IoTMonitoringJob {
                 .setBootstrapServers(sourceProperties.getBootstrapServers())
                 .setTopics(sourceProperties.getTopic())
                 .setGroupId(sourceProperties.getGroupId())
-                .setStartingOffsets(OffsetsInitializer.earliest())
+                .setStartingOffsets(committedOffsets())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
