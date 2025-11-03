@@ -1,0 +1,109 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "18181:8081"
+    networks:
+      - default-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "19092:19092"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - default-network
+
+  kafka-topic-creator:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: kafka-topic-creator
+    depends_on:
+      - kafka
+    command: |
+      bash -c "
+      echo 'Waiting for Kafka cluster to be ready...'
+      
+      # Wait until Kafka is available
+      until kafka-topics --bootstrap-server kafka:9092 --list; do
+      echo 'Waiting for Kafka...'
+      sleep 5
+      done
+      
+      echo 'Creating topics...'
+      
+      # Create topics - use single line or proper line continuation
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:9092 --topic sensor-metrics-data --partitions 1 --replication-factor 1
+      
+      echo 'All topics created successfully!'
+      echo 'Listing all topics:'
+      kafka-topics --bootstrap-server kafka:9092 --list
+      "
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      - default-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "18080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    depends_on:
+      - kafka
+    restart: unless-stopped
+    networks:
+      - default-network
+
+  job-manager:
+    image: flink:1.20.3-java17
+    ports:
+      - "18081:8081"
+    command: jobmanager
+    deploy:
+      resources:
+        limits:
+          cpus: 1
+          memory: 1G
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: job-manager
+        rest.port: 8081
+    networks:
+      - default-network
+
+  task-manager:
+    image: flink:1.20.3-java17
+    depends_on:
+      - job-manager
+    command: taskmanager
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: 1
+          memory: 1536M
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: job-manager
+        taskmanager.numberOfTaskSlots: 2
+        taskmanager.memory.process.size: 1024m
+    networks:
+      - default-network
+
+networks:
+  default-network:
