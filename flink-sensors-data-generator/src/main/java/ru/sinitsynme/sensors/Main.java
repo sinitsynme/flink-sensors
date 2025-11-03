@@ -23,15 +23,7 @@ public class Main {
         List<Sensor> sensors = generateSensors();
         SensorMetricGenerator metricGenerator = new SensorMetricGenerator(random, appProperties);
 
-        Properties producerProps = new Properties();
-        producerProps.put("bootstrap.servers", appProperties.getProperty("kafka.demo-cluster.bootstrap-servers"));
-        producerProps.put("key.serializer", appProperties.getProperty("kafka.sensor-metrics-data.key-serializer"));
-        producerProps.put("value.serializer", appProperties.getProperty("kafka.sensor-metrics-data.value-serializer"));
-        producerProps.put("delivery.timeout.ms", "1000");
-        producerProps.put("request.timeout.ms", "1000");
-        producerProps.put("auto.offset.reset", "earliest");
-
-
+        Properties producerProps = arrangeKafkaProducerProperties();
         var sensorMetricTopic = appProperties.getProperty("kafka.metrics-data.topic");
         var sleepDurationMs = appProperties.getProperty("app.sleep-duration-ms");
 
@@ -56,7 +48,6 @@ public class Main {
             System.err.println("Something went wrong: " + e);
         }
     }
-
 
     private static List<Sensor> generateSensors() {
         var machineId1 = UUID.fromString("db804a74-01d3-7851-8c20-48441167cc4e");
@@ -94,5 +85,16 @@ public class Main {
                 new Sensor(sensor4presId, machineId4, PRESSURE),
                 new Sensor(sensor4vibId, machineId4, VIBRATION)
         );
+    }
+
+    private static Properties arrangeKafkaProducerProperties() {
+        Properties producerProps = new Properties();
+        producerProps.put("bootstrap.servers", appProperties.getProperty("kafka.demo-cluster.bootstrap-servers"));
+        producerProps.put("key.serializer", appProperties.getProperty("kafka.sensor-metrics-data.key-serializer"));
+        producerProps.put("value.serializer", appProperties.getProperty("kafka.sensor-metrics-data.value-serializer"));
+        producerProps.put("delivery.timeout.ms", "1000");
+        producerProps.put("request.timeout.ms", "1000");
+        producerProps.put("auto.offset.reset", "earliest");
+        return producerProps;
     }
 }
