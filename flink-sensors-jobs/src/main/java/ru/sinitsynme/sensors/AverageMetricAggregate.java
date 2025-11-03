@@ -15,6 +15,7 @@ public class AverageMetricAggregate implements AggregateFunction<SensorMetric, A
             accumulator.setMachineId(sensorMetric.machineId());
             accumulator.setSensorId(sensorMetric.sensorId());
             accumulator.setType(sensorMetric.type());
+            accumulator.setLastTimestamp(sensorMetric.timestamp());
         }
         accumulator.setSum(accumulator.getSum() + sensorMetric.value());
         accumulator.setCount(accumulator.getCount() + 1);

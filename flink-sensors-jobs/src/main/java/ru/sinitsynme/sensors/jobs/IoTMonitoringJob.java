@@ -10,14 +10,14 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMap
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import ru.sinitsynme.sensors.*;
 import ru.sinitsynme.util.AppProperties;
 
 import java.time.Duration;
 import java.util.Objects;
 
-import static org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer.committedOffsets;
+import static org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer.earliest;
 import static ru.sinitsynme.sensors.SensorType.TEMPERATURE;
 
 public class IoTMonitoringJob {
@@ -43,7 +43,7 @@ public class IoTMonitoringJob {
                 .setBootstrapServers(sourceProperties.getBootstrapServers())
                 .setTopics(sourceProperties.getTopic())
                 .setGroupId(sourceProperties.getGroupId())
-                .setStartingOffsets(committedOffsets())
+                .setStartingOffsets(earliest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
@@ -60,7 +60,7 @@ public class IoTMonitoringJob {
 
         DataStream<String> averageMetrics = sensorMetricsData
                 .keyBy(metric -> metric.machineId() + "-" + metric.type())
-                .window(TumblingProcessingTimeWindows.of(Duration.ofSeconds(10)))
+                .window(TumblingEventTimeWindows.of(Duration.ofSeconds(10)))
                 .aggregate(new AverageMetricAggregate())
                 .map(avg -> String.format(
                         "AVG: Machine=%s, sensor=%s Type=%s, Average=%.2f, Timestamp=%s",
@@ -76,7 +76,7 @@ public class IoTMonitoringJob {
 
         DataStream<String> healthScores = sensorMetricsData
                 .keyBy(SensorMetric::machineId)
-                .window(TumblingProcessingTimeWindows.of(Duration.ofSeconds(30)))
+                .window(TumblingEventTimeWindows.of(Duration.ofSeconds(30)))
                 .process(new HealthScoreProcessFunction());
 
         averageMetrics.print().name("Average Readings");
