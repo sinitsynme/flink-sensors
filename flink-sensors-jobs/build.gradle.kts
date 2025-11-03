@@ -4,14 +4,20 @@ plugins {
 }
 
 val flinkVersion: String by project
+val kafkaClientsVersion: String by project
+val flinkConnectorKafkaVersion: String by project
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
+    implementation(project(":sensors-commons"))
     implementation("org.apache.flink:flink-streaming-java:$flinkVersion")
+    implementation("org.apache.flink:flink-connector-base:$flinkVersion")
+    implementation("org.apache.flink:flink-connector-kafka:$flinkConnectorKafkaVersion")
     implementation("org.apache.flink:flink-clients:$flinkVersion")
+    implementation("org.apache.kafka:kafka-clients:$kafkaClientsVersion")
 }
 
 tasks {
