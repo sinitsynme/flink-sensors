@@ -13,10 +13,7 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.Ja
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
-import ru.sinitsynme.sensors.AlertsSinkProperties;
-import ru.sinitsynme.sensors.PrometheusSinkProperties;
-import ru.sinitsynme.sensors.SensorMetric;
-import ru.sinitsynme.sensors.SensorMetricsSourceProperties;
+import ru.sinitsynme.sensors.*;
 import ru.sinitsynme.sensors.alert.AlertEvent;
 import ru.sinitsynme.sensors.alert.AlertFunction;
 import ru.sinitsynme.sensors.alert.AlertKeySerializationSchema;
@@ -39,8 +36,6 @@ public class IoTMonitoringJob {
     private static final String PROMETHEUS_AVG_METRIC_SINK_NAME = "Prometheus average metrics sink";
     private static final String IOT_SENSOR_MONITORING_JOB_NAME = "IoTMonitoringJob";
 
-    private static final ObjectMapper objectMapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule());
     private static final AppProperties appProperties = AppProperties.getInstance();
 
 
@@ -52,25 +47,9 @@ public class IoTMonitoringJob {
 
         int maxParallelism = Integer.parseInt(appProperties.getProperty("iot-monitoring-job.max-parallelism"));
 
-        SensorMetricsSourceProperties sourceProperties = new SensorMetricsSourceProperties(appProperties);
-
-        KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
-                .setBootstrapServers(sourceProperties.getBootstrapServers())
-                .setTopics(sourceProperties.getTopic())
-                .setGroupId(sourceProperties.getGroupId())
-                .setStartingOffsets(latest())
-                .setValueOnlyDeserializer(new SimpleStringSchema())
-                .build();
-
-        int watermarkSeconds = Integer.parseInt(appProperties.getProperty("iot-monitoring-job.watermark-seconds"));
-        DataStream<String> kafkaStream = env.fromSource(
-                kafkaSource,
-                WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(watermarkSeconds)),
-                SENSOR_METRICS_DATA_SOURCE_NAME
-        );
-
+        DataStream<String> kafkaStream = getSourceKafkaStream(env);
         DataStream<SensorMetric> sensorMetricsData = kafkaStream
-                .map(sensorMetricsMappingFunction())
+                .map(new SensorMetricMappingFunction())
                 .filter(Objects::nonNull);
 
         DataStream<SensorMetric> averageMetrics = sensorMetricsData
@@ -103,8 +82,24 @@ public class IoTMonitoringJob {
         temperatureAlerts.print().name("Temperature Alerts");
         healthScores.print().name("Health Scores");
 
+        KafkaSink<AlertEvent> alertSink = getAlertEventKafkaSink();
+        PrometheusSink prometheusSink = getPrometheusSink();
+
+        temperatureAlerts.sinkTo(alertSink).name(ALERT_DATA_SINK_NAME);
+        prometheusAverageMetrics.sinkTo(prometheusSink).name(PROMETHEUS_AVG_METRIC_SINK_NAME);
+        env.execute(IOT_SENSOR_MONITORING_JOB_NAME);
+    }
+
+    private static PrometheusSink getPrometheusSink() {
+        PrometheusSinkProperties prometheusSinkProperties = new PrometheusSinkProperties(appProperties);
+        return (PrometheusSink) PrometheusSink.builder()
+                .setPrometheusRemoteWriteUrl(prometheusSinkProperties.getPrometheusPushGatewayUrl())
+                .build();
+    }
+
+    private static KafkaSink<AlertEvent> getAlertEventKafkaSink() {
         AlertsSinkProperties alertsSinkProperties = new AlertsSinkProperties(appProperties);
-        KafkaSink<AlertEvent> alertSink = KafkaSink.<AlertEvent>builder()
+        return KafkaSink.<AlertEvent>builder()
                 .setBootstrapServers(alertsSinkProperties.getBootstrapServers())
                 .setRecordSerializer(KafkaRecordSerializationSchema.builder()
                         .setTopic(alertsSinkProperties.getTopic())
@@ -112,25 +107,24 @@ public class IoTMonitoringJob {
                         .setValueSerializationSchema(new AlertValueSerializationSchema())
                         .build()
                 ).build();
-
-        PrometheusSinkProperties prometheusSinkProperties = new PrometheusSinkProperties(appProperties);
-        PrometheusSink prometheusSink = (PrometheusSink) PrometheusSink.builder()
-                .setPrometheusRemoteWriteUrl(prometheusSinkProperties.getPrometheusPushGatewayUrl())
-                .build();
-
-        temperatureAlerts.sinkTo(alertSink).name(ALERT_DATA_SINK_NAME);
-        prometheusAverageMetrics.sinkTo(prometheusSink).name(PROMETHEUS_AVG_METRIC_SINK_NAME);
-        env.execute(IOT_SENSOR_MONITORING_JOB_NAME);
     }
 
-    private static MapFunction<String, SensorMetric> sensorMetricsMappingFunction() {
-        return value -> {
-            try {
-                return objectMapper.readValue(value, SensorMetric.class);
-            } catch (Exception e) {
-                System.err.println("Failed to parse JSON: " + value);
-                return null;
-            }
-        };
+    private static DataStream<String> getSourceKafkaStream(StreamExecutionEnvironment env) {
+        SensorMetricsSourceProperties sourceProperties = new SensorMetricsSourceProperties(appProperties);
+
+        KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
+                .setBootstrapServers(sourceProperties.getBootstrapServers())
+                .setTopics(sourceProperties.getTopic())
+                .setGroupId(sourceProperties.getGroupId())
+                .setStartingOffsets(latest())
+                .setValueOnlyDeserializer(new SimpleStringSchema())
+                .build();
+
+        int watermarkSeconds = Integer.parseInt(appProperties.getProperty("iot-monitoring-job.watermark-seconds"));
+        return env.fromSource(
+                kafkaSource,
+                WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(watermarkSeconds)),
+                SENSOR_METRICS_DATA_SOURCE_NAME
+        );
     }
 }
