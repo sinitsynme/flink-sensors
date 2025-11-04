@@ -121,15 +121,7 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
-    restart: unless-stopped
-    networks:
-      - default-network
-
-  prometheus-pushgateway:
-    image: prom/pushgateway:v1.11.1
-    container_name: prometheus-pushgateway
-    ports:
-      - "19091:9091"
+      - '--web.enable-remote-write-receiver'
     restart: unless-stopped
     networks:
       - default-network

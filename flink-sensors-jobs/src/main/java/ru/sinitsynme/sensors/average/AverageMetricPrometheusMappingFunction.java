@@ -9,7 +9,7 @@ import java.time.ZoneOffset;
 
 public class AverageMetricPrometheusMappingFunction implements MapFunction<SensorMetric, PrometheusTimeSeries> {
 
-    private static final String AVERAGE_SENSOR_METRIC_NAME = "sensor_metric";
+    private static final String AVERAGE_SENSOR_METRIC_NAME = "sensor_stats";
     private static final String MACHINE_ID_LABEL = "machineId";
     private static final String SENSOR_ID_LABEL = "sensorId";
     private static final String METRIC_TYPE_LABEL = "metricType";

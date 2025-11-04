@@ -13,7 +13,10 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.Ja
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
-import ru.sinitsynme.sensors.*;
+import ru.sinitsynme.sensors.AlertsSinkProperties;
+import ru.sinitsynme.sensors.PrometheusSinkProperties;
+import ru.sinitsynme.sensors.SensorMetric;
+import ru.sinitsynme.sensors.SensorMetricsSourceProperties;
 import ru.sinitsynme.sensors.alert.AlertEvent;
 import ru.sinitsynme.sensors.alert.AlertFunction;
 import ru.sinitsynme.sensors.alert.AlertKeySerializationSchema;
@@ -26,7 +29,7 @@ import ru.sinitsynme.util.AppProperties;
 import java.time.Duration;
 import java.util.Objects;
 
-import static org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer.earliest;
+import static org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer.latest;
 import static ru.sinitsynme.sensors.SensorType.TEMPERATURE;
 
 public class IoTMonitoringJob {
@@ -55,7 +58,7 @@ public class IoTMonitoringJob {
                 .setBootstrapServers(sourceProperties.getBootstrapServers())
                 .setTopics(sourceProperties.getTopic())
                 .setGroupId(sourceProperties.getGroupId())
-                .setStartingOffsets(earliest())
+                .setStartingOffsets(latest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
