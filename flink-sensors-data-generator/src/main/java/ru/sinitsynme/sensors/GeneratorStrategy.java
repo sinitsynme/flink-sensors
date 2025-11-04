@@ -20,7 +20,7 @@ abstract class GeneratorStrategy {
 
 
 class TemperatureGeneratorStrategy extends GeneratorStrategy {
-    private static final int BASE_VALUE = 70;
+    private static final int BASE_VALUE = 40;
     private static final int MAX_DEVIATION = 100;
 
     public TemperatureGeneratorStrategy(Random random) {
