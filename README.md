@@ -19,7 +19,10 @@ Apache Flink can help us to manage all these flows of data
 
 ## Launching project
 
-Requirements: Docker, Java 17.
+Requirements: Docker, Java 17 (to run GeneratorApp locally).
+
+<details>
+<summary>Expand to read all steps how to launch the project</summary>
 
 1. Launch all containers: `docker compose up -d`. Launched containers: 
    1. Zookeeper
@@ -46,13 +49,20 @@ Requirements: Docker, Java 17.
              }'
    </code>
 6. Go to `Jobs -> Running Jobs` in UI to watch the result
+
+</details>
+
+As a result of launching Flink Job you will get Job Graph
+
 ![flink-ui-example.png](screenshots/flink-ui-example.png)
-7. If you want to watch average metrics in Grafana:
-   1. Go to http://localhost:13000
-   2. Login with admin/admin
-   3. Open `Average sensor metrics` dashboard
+
+If you want to watch average metrics in Grafana after launching job:
+1. Go to http://localhost:13000
+2. Login with admin/admin
+3. Open `Average sensor metrics` dashboard
    ![img.png](screenshots/grafana.png)
-   4. As an experiment, a couple of sensors was marked broken in GeneratorApp.java. Obviously they are showing off on the dashboard, you can watch it
+4. As an experiment, a couple of sensors was marked broken in GeneratorApp.java. Obviously they are showing off on the dashboard, you can watch it
+
 
 ## Architecture of the project
 
