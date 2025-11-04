@@ -60,6 +60,8 @@ Java project is separated in three modules:
   - module for storing flink jobs in one jar
   - may contain more than one job
   - can be configured by application.properties
+- [sensors-commons](sensors-commons)
+  - module for common DTOs
 
 ### Input
 
