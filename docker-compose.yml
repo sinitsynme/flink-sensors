@@ -106,5 +106,53 @@ services:
     networks:
       - default-network
 
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    container_name: prometheus
+    ports:
+      - "19090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - default-network
+
+  prometheus-pushgateway:
+    image: prom/pushgateway:v1.11.1
+    container_name: prometheus-pushgateway
+    ports:
+      - "19091:9091"
+    restart: unless-stopped
+    networks:
+      - default-network
+
+  grafana:
+    image: grafana/grafana:12.3.0-19020365962
+    container_name: grafana
+    ports:
+      - "13000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - default-network
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
 networks:
   default-network:

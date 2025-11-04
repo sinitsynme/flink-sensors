@@ -11,7 +11,7 @@ public class AlertsSinkProperties {
         this.topic = properties.getProperty("iot-monitoring-job.sink.topic");
     }
 
-    public AlertsSinkProperties(String bootstrapServers, String topic, String groupId) {
+    public AlertsSinkProperties(String bootstrapServers, String topic) {
         this.bootstrapServers = bootstrapServers;
         this.topic = topic;
     }

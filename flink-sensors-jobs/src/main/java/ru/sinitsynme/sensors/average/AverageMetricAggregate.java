@@ -1,6 +1,7 @@
-package ru.sinitsynme.sensors;
+package ru.sinitsynme.sensors.average;
 
 import org.apache.flink.api.common.functions.AggregateFunction;
+import ru.sinitsynme.sensors.SensorMetric;
 
 public class AverageMetricAggregate implements AggregateFunction<SensorMetric, AverageMetricAccumulator, SensorMetric> {
 

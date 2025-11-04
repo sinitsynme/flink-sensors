@@ -1,8 +1,9 @@
-package ru.sinitsynme.sensors;
+package ru.sinitsynme.sensors.healthscore;
 
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
+import ru.sinitsynme.sensors.SensorMetric;
 
 import java.util.ArrayList;
 import java.util.List;

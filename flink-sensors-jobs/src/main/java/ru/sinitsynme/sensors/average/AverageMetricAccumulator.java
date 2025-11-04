@@ -1,4 +1,6 @@
-package ru.sinitsynme.sensors;
+package ru.sinitsynme.sensors.average;
+
+import ru.sinitsynme.sensors.SensorType;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

@@ -6,13 +6,21 @@ import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
+import org.apache.flink.connector.prometheus.sink.PrometheusSink;
+import org.apache.flink.connector.prometheus.sink.PrometheusTimeSeries;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import ru.sinitsynme.sensors.*;
-import ru.sinitsynme.sensors.alert.*;
+import ru.sinitsynme.sensors.alert.AlertEvent;
+import ru.sinitsynme.sensors.alert.AlertFunction;
+import ru.sinitsynme.sensors.alert.AlertKeySerializationSchema;
+import ru.sinitsynme.sensors.alert.AlertValueSerializationSchema;
+import ru.sinitsynme.sensors.average.AverageMetricAggregate;
+import ru.sinitsynme.sensors.average.AverageMetricPrometheusMappingFunction;
+import ru.sinitsynme.sensors.healthscore.HealthScoreProcessFunction;
 import ru.sinitsynme.util.AppProperties;
 
 import java.time.Duration;
@@ -25,6 +33,7 @@ public class IoTMonitoringJob {
 
     private static final String SENSOR_METRICS_DATA_SOURCE_NAME = "Sensor metrics data source";
     private static final String ALERT_DATA_SINK_NAME = "Sensor alerts data sink";
+    private static final String PROMETHEUS_AVG_METRIC_SINK_NAME = "Prometheus average metrics sink";
     private static final String IOT_SENSOR_MONITORING_JOB_NAME = "IoTMonitoringJob";
 
     private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -73,6 +82,9 @@ public class IoTMonitoringJob {
                         avg.machineId(), avg.sensorId(), avg.type(), avg.value(), avg.timestamp()
                 ));
 
+        DataStream<PrometheusTimeSeries> prometheusAverageMetrics = averageMetrics
+                .map(new AverageMetricPrometheusMappingFunction());
+
         double temperatureAlertThreshold = appProperties.getDoubleProperty("iot-monitoring-job.temperature-alert-threshold");
         DataStream<AlertEvent> temperatureAlerts = averageMetrics
                 .filter(sensorMetric -> sensorMetric.type() == TEMPERATURE)
@@ -84,7 +96,7 @@ public class IoTMonitoringJob {
                 .window(TumblingEventTimeWindows.of(Duration.ofSeconds(30)))
                 .process(new HealthScoreProcessFunction());
 
-        averageMetricsText.print().name("Average Readings");
+        averageMetricsText.print().name("Average Metrics");
         temperatureAlerts.print().name("Temperature Alerts");
         healthScores.print().name("Health Scores");
 
@@ -98,7 +110,13 @@ public class IoTMonitoringJob {
                         .build()
                 ).build();
 
+        PrometheusSinkProperties prometheusSinkProperties = new PrometheusSinkProperties(appProperties);
+        PrometheusSink prometheusSink = (PrometheusSink) PrometheusSink.builder()
+                .setPrometheusRemoteWriteUrl(prometheusSinkProperties.getPrometheusPushGatewayUrl())
+                .build();
+
         temperatureAlerts.sinkTo(alertSink).name(ALERT_DATA_SINK_NAME);
+        prometheusAverageMetrics.sinkTo(prometheusSink).name(PROMETHEUS_AVG_METRIC_SINK_NAME);
         env.execute(IOT_SENSOR_MONITORING_JOB_NAME);
     }
 
