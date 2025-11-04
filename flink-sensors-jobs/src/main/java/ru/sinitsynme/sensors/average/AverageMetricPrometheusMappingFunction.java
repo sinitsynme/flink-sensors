@@ -4,7 +4,6 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.connector.prometheus.sink.PrometheusTimeSeries;
 import ru.sinitsynme.sensors.SensorMetric;
 
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 
 public class AverageMetricPrometheusMappingFunction implements MapFunction<SensorMetric, PrometheusTimeSeries> {

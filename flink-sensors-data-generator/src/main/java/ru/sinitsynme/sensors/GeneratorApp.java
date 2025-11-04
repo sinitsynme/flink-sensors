@@ -19,6 +19,10 @@ public class GeneratorApp {
     private static final AppProperties appProperties = AppProperties.getInstance();
     private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
+    public static final UUID BROKEN_SENSOR_ID_1 = UUID.fromString("08ec7162-91df-4afa-a90b-7ee834af276a");
+    public static final UUID BROKEN_SENSOR_ID_2 = UUID.fromString("2eba0ee5-7650-4139-b0f1-725a782e1ea8");
+    public static final List<UUID> BROKEN_SENSOR_IDS = List.of(BROKEN_SENSOR_ID_1, BROKEN_SENSOR_ID_2);
+
     public static void main(String[] args) {
         List<Sensor> sensors = generateSensors();
         SensorMetricGenerator metricGenerator = new SensorMetricGenerator(random, appProperties);
@@ -60,9 +64,7 @@ public class GeneratorApp {
         var sensor1vibId = UUID.fromString("bb3cfc98-f554-4e95-8521-5a9e53c3c777");
         var sensor2tempId = UUID.fromString("1264e1a0-af87-4c5e-98fc-a5ce9beb7be6");
         var sensor2presId = UUID.fromString("9583d087-af80-4bb5-8f45-03bf5b84ff10");
-        var sensor2vibId = UUID.fromString("2eba0ee5-7650-4139-b0f1-725a782e1ea8");
         var sensor3tempId = UUID.fromString("7529d04e-f33f-42f5-999f-7e895df1c987");
-        var sensor3presId = UUID.fromString("08ec7162-91df-4afa-a90b-7ee834af276a");
         var sensor3vibId = UUID.fromString("30c8c8b0-7f1b-4e19-b03a-0fc5e147d5ec");
         var sensor4tempId = UUID.fromString("30aafb95-4d13-4b9a-b63a-883b6ba71d39");
         var sensor4presId = UUID.fromString("0b398019-cafb-4673-91cf-6f97e1bbb4e2");
@@ -75,10 +77,10 @@ public class GeneratorApp {
 
                 new Sensor(sensor2tempId, machineId2, TEMPERATURE),
                 new Sensor(sensor2presId, machineId2, PRESSURE),
-                new Sensor(sensor2vibId, machineId2, VIBRATION),
+                new Sensor(BROKEN_SENSOR_ID_2, machineId2, VIBRATION),
 
                 new Sensor(sensor3tempId, machineId3, TEMPERATURE),
-                new Sensor(sensor3presId, machineId3, PRESSURE),
+                new Sensor(BROKEN_SENSOR_ID_1, machineId3, PRESSURE),
                 new Sensor(sensor3vibId, machineId3, VIBRATION),
 
                 new Sensor(sensor4tempId, machineId4, TEMPERATURE),
