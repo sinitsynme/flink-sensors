@@ -12,6 +12,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import ru.sinitsynme.sensors.*;
+import ru.sinitsynme.sensors.alert.*;
 import ru.sinitsynme.util.AppProperties;
 
 import java.time.Duration;
@@ -68,11 +69,10 @@ public class IoTMonitoringJob {
                 ));
 
         double temperatureAlertThreshold = appProperties.getDoubleProperty("iot-monitoring-job.temperature-alert-threshold");
-        DataStream<String> temperatureAlerts = sensorMetricsData
+        DataStream<AlertEvent> temperatureAlerts = sensorMetricsData
                 .filter(sensorMetric -> sensorMetric.type() == TEMPERATURE)
-                .keyBy(SensorMetric::machineId)
-                .process(new TemperatureAlertFunction(temperatureAlertThreshold));
-
+                .keyBy(metric -> metric.machineId() + "-" + metric.type())
+                .process(new AlertFunction(temperatureAlertThreshold));
 
         DataStream<String> healthScores = sensorMetricsData
                 .keyBy(SensorMetric::machineId)
@@ -84,17 +84,16 @@ public class IoTMonitoringJob {
         healthScores.print().name("Health Scores");
 
         AlertsSinkProperties alertsSinkProperties = new AlertsSinkProperties(appProperties);
-        KafkaSink<String> alertSink = KafkaSink.<String>builder()
+        KafkaSink<AlertEvent> alertSink = KafkaSink.<AlertEvent>builder()
                 .setBootstrapServers(alertsSinkProperties.getBootstrapServers())
                 .setRecordSerializer(KafkaRecordSerializationSchema.builder()
                         .setTopic(alertsSinkProperties.getTopic())
-                        .setValueSerializationSchema(new SimpleStringSchema())
+                        .setKeySerializationSchema(new AlertKeySerializationSchema())
+                        .setValueSerializationSchema(new AlertValueSerializationSchema())
                         .build()
-                )
-                .build();
+                ).build();
 
         temperatureAlerts.sinkTo(alertSink).name(ALERT_DATA_SINK_NAME);
-
         env.execute(IOT_SENSOR_MONITORING_JOB_NAME);
     }
 
@@ -108,5 +107,4 @@ public class IoTMonitoringJob {
             }
         };
     }
-
 }
