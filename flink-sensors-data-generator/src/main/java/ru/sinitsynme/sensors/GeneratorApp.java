@@ -14,7 +14,7 @@ import java.util.UUID;
 
 import static ru.sinitsynme.sensors.SensorType.*;
 
-public class Main {
+public class GeneratorApp {
     private static final Random random = new SecureRandom();
     private static final AppProperties appProperties = AppProperties.getInstance();
     private static final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());

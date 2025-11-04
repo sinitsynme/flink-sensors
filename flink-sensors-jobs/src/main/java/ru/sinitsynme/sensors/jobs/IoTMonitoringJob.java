@@ -38,6 +38,8 @@ public class IoTMonitoringJob {
         int checkpointingInterval = Integer.parseInt(appProperties.getProperty("iot-monitoring-job.checkpoint-interval-ms"));
         env.enableCheckpointing(checkpointingInterval);
 
+        int maxParallelism = Integer.parseInt(appProperties.getProperty("iot-monitoring-job.max-parallelism"));
+
         SensorMetricsSourceProperties sourceProperties = new SensorMetricsSourceProperties(appProperties);
 
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
@@ -59,17 +61,20 @@ public class IoTMonitoringJob {
                 .map(sensorMetricsMappingFunction())
                 .filter(Objects::nonNull);
 
-        DataStream<String> averageMetrics = sensorMetricsData
+        DataStream<SensorMetric> averageMetrics = sensorMetricsData
                 .keyBy(metric -> metric.machineId() + "-" + metric.type())
                 .window(TumblingEventTimeWindows.of(Duration.ofSeconds(10)))
                 .aggregate(new AverageMetricAggregate())
+                .setParallelism(maxParallelism);
+
+        DataStream<String> averageMetricsText = averageMetrics
                 .map(avg -> String.format(
                         "AVG: Machine=%s, sensor=%s Type=%s, Average=%.2f, Timestamp=%s",
                         avg.machineId(), avg.sensorId(), avg.type(), avg.value(), avg.timestamp()
                 ));
 
         double temperatureAlertThreshold = appProperties.getDoubleProperty("iot-monitoring-job.temperature-alert-threshold");
-        DataStream<AlertEvent> temperatureAlerts = sensorMetricsData
+        DataStream<AlertEvent> temperatureAlerts = averageMetrics
                 .filter(sensorMetric -> sensorMetric.type() == TEMPERATURE)
                 .keyBy(metric -> metric.machineId() + "-" + metric.type())
                 .process(new AlertFunction(temperatureAlertThreshold));
@@ -79,7 +84,7 @@ public class IoTMonitoringJob {
                 .window(TumblingEventTimeWindows.of(Duration.ofSeconds(30)))
                 .process(new HealthScoreProcessFunction());
 
-        averageMetrics.print().name("Average Readings");
+        averageMetricsText.print().name("Average Readings");
         temperatureAlerts.print().name("Temperature Alerts");
         healthScores.print().name("Health Scores");
 
