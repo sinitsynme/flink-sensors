@@ -79,7 +79,7 @@ public class IoTMonitoringJob {
                 .keyBy(metric -> metric.machineId() + "-" + metric.type())
                 .process(new AlertFunction(temperatureAlertThreshold));
 
-        DataStream<String> healthScores = sensorMetricsData
+        DataStream<String> healthScores = averageMetrics
                 .keyBy(SensorMetric::machineId)
                 .window(TumblingEventTimeWindows.of(Duration.ofSeconds(30)))
                 .process(new HealthScoreProcessFunction());

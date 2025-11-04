@@ -54,7 +54,7 @@ public class HealthScoreProcessFunction extends ProcessWindowFunction<SensorMetr
             }
         }
 
-        return Math.max(0, score); // Don't go below 0
+        return Math.max(0, score);
     }
 
     private String getHealthStatus(double score) {
