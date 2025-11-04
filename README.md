@@ -47,6 +47,12 @@ Requirements: Docker, Java 17.
    </code>
 6. Go to `Jobs -> Running Jobs` in UI to watch the result
 ![flink-ui-example.png](screenshots/flink-ui-example.png)
+7. If you want to watch average metrics in Grafana:
+   1. Go to http://localhost:13000
+   2. Login with admin/admin
+   3. Open `Average sensor metrics` dashboard
+   ![img.png](screenshots/grafana.png)
+   4. As an experiment, a couple of sensors was marked broken in GeneratorApp.java. Obviously they are showing off on the dashboard, you can watch it
 
 ## Architecture of the project
 
@@ -76,9 +82,9 @@ sensor-metrics-data Kafka topic is consumed by Apache Flink:
 - source is watermarked to prevent delayed data
 - source metrics are aggregated with TumblingEventTimeWindow into average metrics stream by [AverageMetricAggregate.java](flink-sensors-jobs/src/main/java/ru/sinitsynme/sensors/AverageMetricAggregate.java). Parallelism is set to 4 to make CPU-bounded operations quicker
   - stream entries are mapped into string to log them
+  - stream entries are mapped into PrometheusTimeSeries to be saved to Prometheus by Prometheus Remote Write sink
   - stream entries are processed by stateful [AlertFunction.java](flink-sensors-jobs/src/main/java/ru/sinitsynme/sensors/alert/AlertFunction.java). If alert opens or closes, we send message to sensor-alerts Kafka topic
   - stream entries are processed by non-stateful [HealthScoreProcessFunction.java](flink-sensors-jobs/src/main/java/ru/sinitsynme/sensors/HealthScoreProcessFunction.java) and calculates health-score of machine by simple business-rules
 
 ### TBC 
-- Going to add Prometheus sink and grafana to output collected average metrics
 - Going to add Clickhouse sink to store historical health scores
